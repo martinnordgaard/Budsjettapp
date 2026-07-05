@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#00343e">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Budsjett">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Budsjett</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+<style>
+  /* DNB Eufemia-inspirert lyst tema */
+  :root{
+    --bg:#f4fbf9;              /* mintgreen 12% */
+    --card:#ffffff;
+    --card2:#e9f8f4;           /* mintgreen 25% */
+    --line:#e3ebe9;
+    --txt:#00343e;            /* oceangreen */
+    --muted:#5c7375;
+    --accent:#007272;         /* seagreen */
+    --accent2:#00343e;        /* oceangreen */
+    --header:#00343e;         /* oceangreen header */
+    --income:#007b5e;         /* success green */
+    --expense:#dc2a2a;        /* fire red */
+    --warn:#fdbb31;           /* accent yellow */
+    --mint:#a5e1d2;
+    --radius:14px;
+    --shadow:0 4px 18px rgba(0,52,62,.09);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--txt); font-size:16px; line-height:1.45;
+    padding-bottom:86px; max-width:900px; margin:0 auto;
+  }
+  h1,h2,h3{margin:0}
+  header{
+    position:sticky; top:0; z-index:20; background:var(--header); color:#fff;
+    padding:16px 18px 14px; display:flex; align-items:center; gap:10px;
+    box-shadow:0 2px 12px rgba(0,52,62,.18);
+  }
+  header h1{font-size:19px; font-weight:800; flex:1; letter-spacing:-.01em; display:flex; align-items:center; gap:9px}
+  .logo{width:26px;height:26px;border-radius:6px;background:var(--mint);display:grid;place-items:center;color:var(--header);font-size:16px;font-weight:900;flex-shrink:0}
+  .monthnav{display:flex; align-items:center; gap:4px}
+  .monthnav button{
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.22); color:#fff;
+    width:32px; height:32px; border-radius:9px; font-size:18px; cursor:pointer;
+  }
+  .monthnav button:active{background:rgba(255,255,255,.25)}
+  .monthnav .lbl{min-width:104px; text-align:center; font-size:13px; font-weight:600; color:rgba(255,255,255,.9)}
+  main{padding:16px}
+  .view{display:none; animation:fade .2s ease}
+  .view.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-bottom:14px; box-shadow:var(--shadow)}
+  .card h2{font-size:13px; color:var(--muted); font-weight:700; margin-bottom:12px; text-transform:uppercase; letter-spacing:.05em}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+  .stat{background:var(--card2); border-radius:12px; padding:14px 12px; text-align:center}
+  .stat .lbl{font-size:12px; color:var(--muted); margin-bottom:4px; font-weight:600}
+  .stat .val{font-size:17px; font-weight:800; white-space:nowrap}
+  .val.income{color:var(--income)} .val.expense{color:var(--expense)}
+  .val.pos{color:var(--income)} .val.neg{color:var(--expense)}
+  .row{display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .row .icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;background:var(--card2);flex-shrink:0}
+  .row .info{flex:1; min-width:0}
+  .row .info .t{font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .row .info .s{font-size:12px; color:var(--muted)}
+  .row .amt{font-weight:800; font-size:15px; white-space:nowrap}
+  .amt.income{color:var(--income)} .amt.expense{color:var(--expense)}
+  .row .del{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 6px}
+  .bar{height:9px; background:#eef1f0; border-radius:6px; overflow:hidden; margin-top:6px}
+  .bar > span{display:block; height:100%; border-radius:6px; background:var(--accent); transition:width .3s}
+  .bar > span.over{background:var(--expense)}
+  .bar > span.warn{background:var(--warn)}
+  .budgetline{margin-bottom:14px}
+  .budgetline:last-child{margin-bottom:0}
+  .budgetline .top{display:flex; justify-content:space-between; font-size:14px; margin-bottom:2px; font-weight:600}
+  .budgetline .top .r{color:var(--muted); font-size:13px; font-weight:500}
+  .empty{text-align:center; color:var(--muted); padding:26px 10px; font-size:14px}
+  .btn{background:var(--accent); color:#fff; border:none; border-radius:12px; padding:13px 16px; font-size:15px; font-weight:700; cursor:pointer; width:100%}
+  .btn:active{background:var(--accent2)}
+  .btn.sec{background:#fff; color:var(--accent); border:1.5px solid var(--accent)}
+  .btn.sec:active{background:var(--card2)}
+  .btn.danger{background:#fff; color:var(--expense); border:1.5px solid var(--expense)}
+  .btnrow{display:flex; gap:10px}
+  .btnrow .btn{width:auto; flex:1}
+  label{display:block; font-size:13px; color:var(--muted); margin:12px 0 5px; font-weight:600}
+  input,select{
+    width:100%; background:#fff; border:1.5px solid var(--line); color:var(--txt);
+    border-radius:11px; padding:13px 12px; font-size:16px; font-family:inherit;
+  }
+  input:focus,select:focus{outline:none; border-color:var(--accent)}
+  .seg{display:flex; background:var(--card2); border-radius:11px; padding:4px; gap:4px}
+  .seg button{flex:1; background:none; border:none; color:var(--muted); padding:10px; border-radius:8px; font-size:15px; font-weight:700; cursor:pointer}
+  .seg button.on{background:var(--accent); color:#fff}
+  .seg button.on.exp{background:var(--expense); color:#fff}
+  nav{
+    position:fixed; bottom:0; left:0; right:0; z-index:30; max-width:900px; margin:0 auto;
+    background:#fff; border-top:1px solid var(--line);
+    display:flex; padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+    box-shadow:0 -2px 14px rgba(0,52,62,.06);
+  }
+  nav button{flex:1; background:none; border:none; color:var(--muted); font-size:11px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:3px; padding:4px; font-weight:600}
+  nav button .ic{font-size:21px; line-height:1; filter:grayscale(.3)}
+  nav button.on{color:var(--accent)}
+  nav button.on .ic{filter:none}
+  .fab{position:fixed; right:18px; bottom:calc(86px + env(safe-area-inset-bottom)); z-index:31; width:58px; height:58px; border-radius:50%; background:var(--accent); color:#fff; border:none; font-size:30px; box-shadow:0 6px 18px rgba(0,114,114,.4); cursor:pointer; max-width:none}
+  .fab:active{background:var(--accent2)}
+  @media(min-width:900px){.fab{right:calc(50vw - 450px + 18px)}}
+  .modal{position:fixed; inset:0; z-index:40; background:rgba(0,52,62,.45); display:none; align-items:flex-end; justify-content:center}
+  .modal.open{display:flex}
+  .sheet{background:var(--card); width:100%; max-width:900px; border-radius:20px 20px 0 0; padding:20px 18px calc(24px + env(safe-area-inset-bottom)); max-height:92vh; overflow-y:auto; animation:up .25s ease}
+  @keyframes up{from{transform:translateY(100%)}to{transform:none}}
+  .sheet h2{font-size:18px; margin-bottom:6px; font-weight:800}
+  .sheethead{display:flex; align-items:center; margin-bottom:8px}
+  .sheethead h2{flex:1}
+  .sheethead button{background:none;border:none;color:var(--muted);font-size:26px;cursor:pointer;line-height:1}
+  .goalcard .top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:2px}
+  .goalcard .top .name{font-weight:800; font-size:16px}
+  .goalcard .sub{font-size:13px; color:var(--muted); margin-bottom:6px}
+  .pill{display:inline-block; font-size:12px; padding:4px 10px; border-radius:20px; background:var(--card2); color:var(--accent); font-weight:600}
+  .cmdbtn{background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.25); color:#fff; width:34px; height:34px; border-radius:9px; font-size:16px; cursor:pointer; margin-right:2px}
+  .cmdbtn:active{background:rgba(255,255,255,.28)}
+  /* Onboarding */
+  .onboard{position:fixed; inset:0; z-index:60; background:var(--bg); display:none; flex-direction:column; max-width:900px; margin:0 auto}
+  .onboard.open{display:flex}
+  .onboard .obtop{background:var(--header); color:#fff; padding:22px 20px 18px}
+  .progressdots{display:flex; gap:6px; margin-bottom:16px}
+  .progressdots span{height:6px; flex:1; background:rgba(255,255,255,.25); border-radius:3px; transition:background .2s}
+  .progressdots span.on{background:var(--mint)}
+  .obtop .bigq{font-size:22px; font-weight:800; line-height:1.25}
+  .obtop .obsub{font-size:14px; color:rgba(255,255,255,.85); margin-top:6px}
+  .obbody{flex:1; overflow-y:auto; padding:20px}
+  .obfoot{padding:14px 20px calc(16px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); display:flex; gap:10px}
+  .obfoot .btn{flex:1}
+  .preset{display:flex; gap:9px; flex-wrap:wrap; margin-top:6px}
+  .preset button{background:#fff; border:1.5px solid var(--line); color:var(--txt); padding:11px 15px; border-radius:22px; font-size:14px; font-weight:600; cursor:pointer}
+  .preset button.picked{background:var(--card2); border-color:var(--accent); color:var(--accent)}
+  .acctmini{display:flex; align-items:center; gap:10px; background:var(--card2); border-radius:11px; padding:10px 12px; margin-top:8px}
+  .acctmini .info{flex:1}
+  .acctmini .rm{background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer}
+  .sugg{display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-bottom:1px solid var(--line)}
+  .sugg:last-child{border:none}
+  .sugg input{width:110px; text-align:right}
+  .chips{display:flex; gap:8px; overflow-x:auto; padding:2px 0 10px; -webkit-overflow-scrolling:touch}
+  .chip{white-space:nowrap; background:#fff; border:1.5px solid var(--line); color:var(--muted); padding:8px 14px; border-radius:20px; font-size:13px; font-weight:600; cursor:pointer; flex-shrink:0}
+  .chip.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+  .small{font-size:13px; color:var(--muted)}
+  .hint{font-size:12px; color:var(--muted); margin-top:8px; line-height:1.5}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="logo">B</span> Budsjett</h1>
+  <button id="cmdBtn" class="cmdbtn" aria-label="Kommando" title="Skriv en kommando">✨</button>
+  <div class="monthnav">
+    <button id="prevM" aria-label="Forrige måned">‹</button>
+    <span class="lbl" id="monthLbl">—</span>
+    <button id="nextM" aria-label="Neste måned">›</button>
+  </div>
+</header>
+
+<main>
+  <!-- OVERSIKT -->
+  <section class="view active" id="v-oversikt">
+    <div class="card">
+      <div class="grid3">
+        <div class="stat"><div class="lbl">Inntekt</div><div class="val income" id="sInc">0</div></div>
+        <div class="stat"><div class="lbl">Utgift</div><div class="val expense" id="sExp">0</div></div>
+        <div class="stat"><div class="lbl">Netto</div><div class="val" id="sNet">0</div></div>
+      </div>
+    </div>
+    <div class="card" id="safeCard">
+      <h2>Trygt å bruke</h2>
+      <div id="safeToSpend"></div>
+    </div>
+    <div class="card">
+      <h2>Kontoer denne måneden</h2>
+      <div id="accountList"></div>
+    </div>
+    <div class="card">
+      <h2>Fordeling</h2>
+      <div id="donut"></div>
+    </div>
+    <div class="card">
+      <h2>Budsjett denne måneden</h2>
+      <div id="ovBudget"></div>
+    </div>
+    <div class="card">
+      <h2>Siste transaksjoner</h2>
+      <div id="ovRecent"></div>
+    </div>
+  </section>
+
+  <!-- TRANSAKSJONER -->
+  <section class="view" id="v-transaksjoner">
+    <button class="btn sec" id="importCsvBtn" style="margin-bottom:14px">📥 Importer fra nettbank (CSV)</button>
+    <div class="chips" id="acctChips"></div>
+    <div class="card">
+      <h2>Transaksjoner denne måneden</h2>
+      <div id="txList"></div>
+    </div>
+  </section>
+
+  <!-- BUDSJETT -->
+  <section class="view" id="v-budsjett">
+    <div class="card">
+      <h2>Månedsbudsjett per kategori</h2>
+      <div id="budgetList"></div>
+      <button class="btn sec" id="addCatBtn" style="margin-top:14px">+ Ny kategori / sett budsjett</button>
+    </div>
+  </section>
+
+  <!-- SPAREMÅL -->
+  <section class="view" id="v-sparemal">
+    <div class="card">
+      <h2>Sparemål</h2>
+      <div id="goalList"></div>
+      <button class="btn sec" id="addGoalBtn" style="margin-top:14px">+ Nytt sparemål</button>
+    </div>
+  </section>
+
+  <!-- INNSTILLINGER -->
+  <section class="view" id="v-innstillinger">
+    <div class="card">
+      <h2>Kom i gang</h2>
+      <p class="small">Kjør den veiledede oppsettsveiviseren på nytt, eller prøv kommandolinjen (✨ oppe til høyre).</p>
+      <button class="btn sec" id="rerunSetup" style="margin-top:14px">🚀 Kjør oppsettsveiviser</button>
+    </div>
+    <div class="card">
+      <h2>Data & backup</h2>
+      <p class="small">Alt lagres i denne nettleseren. Ta backup jevnlig, og bruk import for å flytte data til en annen enhet (telefon ↔ PC).</p>
+      <div class="btnrow" style="margin-top:14px">
+        <button class="btn sec" id="exportBtn">⬇︎ Eksporter backup</button>
+        <button class="btn sec" id="importBtn">⬆︎ Importer</button>
+      </div>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+      <button class="btn danger" id="resetBtn" style="margin-top:12px">Slett alle data</button>
+    </div>
+    <div class="card">
+      <h2>Kontoer</h2>
+      <div id="acctManage"></div>
+      <button class="btn sec" id="addAcctBtn" style="margin-top:14px">+ Ny konto</button>
+    </div>
+    <div class="card">
+      <h2>Importer fra nettbank</h2>
+      <p class="small">Last ned transaksjoner som CSV fra DNB (eller annen bank) og importer dem her. Fungerer for flere kontoer – duplikater hoppes over automatisk.</p>
+      <button class="btn sec" id="importCsvBtn2" style="margin-top:14px">📥 Importer CSV</button>
+    </div>
+    <div class="card">
+      <h2>Legg til på hjemskjerm</h2>
+      <p class="small">På telefon: åpne denne filen i nettleseren og velg «Legg til på hjemskjerm» / «Add to Home Screen». Da får du et app-ikon.</p>
+    </div>
+  </section>
+</main>
+
+<div class="onboard" id="onboard">
+  <div class="obtop">
+    <div class="progressdots" id="obDots"></div>
+    <div class="bigq" id="obTitle"></div>
+    <div class="obsub" id="obSub"></div>
+  </div>
+  <div class="obbody" id="obBody"></div>
+  <div class="obfoot" id="obFoot"></div>
+</div>
+
+<button class="fab" id="fab">＋</button>
+
+<nav>
+  <button class="on" data-v="oversikt"><span class="ic">📊</span>Oversikt</button>
+  <button data-v="transaksjoner"><span class="ic">📃</span>Transaksjoner</button>
+  <button data-v="budsjett"><span class="ic">🎯</span>Budsjett</button>
+  <button data-v="sparemal"><span class="ic">🐖</span>Sparemål</button>
+  <button data-v="innstillinger"><span class="ic">⚙️</span>Mer</button>
+</nav>
+
+<!-- Modal -->
+<div class="modal" id="modal">
+  <div class="sheet" id="sheet"></div>
+</div>
+
+<script>
+"use strict";
+const LS_KEY = "budsjett_v1";
+const CAT_ICONS = {
+  "Mat":"🍎","Dagligvarer":"🛒","Transport":"🚗","Bolig":"🏠","Husleie":"🏠",
+  "Strøm":"⚡","Fritid":"🎮","Helse":"💊","Klær":"👕","Restaurant":"🍽️",
+  "Abonnement":"📺","Reise":"✈️","Sparing":"🐖","Barn":"🧸","Gaver":"🎁",
+  "Lønn":"💵","Annet":"📦"
+};
+const DEFAULTS = {
+  categories:{
+    expense:["Mat","Transport","Bolig","Strøm","Fritid","Helse","Klær","Restaurant","Abonnement","Annet"],
+    income:["Lønn","Annet"]
+  },
+  budgets:{}, transactions:[], goals:[],
+  accounts:[], onboarded:false, salary:0, payday:25
+};
+let state = load();
+let curDate = new Date();
+let curType = "expense";
+let acctFilter = "all";
+
+function load(){
+  let d;
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    d = raw ? Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(raw)) : JSON.parse(JSON.stringify(DEFAULTS));
+  }catch(e){ d = JSON.parse(JSON.stringify(DEFAULTS)); }
+  if(!Array.isArray(d.accounts)) d.accounts = [];
+  // migrer gammel fritekst-konto til kontoID
+  (d.transactions||[]).forEach(t=>{
+    if(!t.accountId && t.account){
+      let a = d.accounts.find(x=>x.name.toLowerCase()===String(t.account).toLowerCase());
+      if(!a){ a={id:"acc_"+Math.random().toString(36).slice(2,7),name:t.account,type:"debit"}; d.accounts.push(a); }
+      t.accountId = a.id;
+    }
+  });
+  return d;
+}
+function accById(id){ return state.accounts.find(a=>a.id===id) || null; }
+function accName(id){ const a=accById(id); return a?a.name:"Ukjent konto"; }
+function isCredit(id){ const a=accById(id); return a && a.type==="credit"; }
+function save(){ localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+function icon(cat){ return CAT_ICONS[cat] || "📦"; }
+function fmt(n){ return new Intl.NumberFormat("nb-NO",{style:"currency",currency:"NOK",maximumFractionDigits:0}).format(n||0); }
+function fmtN(n){ return new Intl.NumberFormat("nb-NO",{maximumFractionDigits:0}).format(n||0); }
+const MONTHS=["januar","februar","mars","april","mai","juni","juli","august","september","oktober","november","desember"];
+function monthKey(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"); }
+function txInMonth(){ const k=monthKey(curDate); return state.transactions.filter(t=>t.date.slice(0,7)===k); }
+
+// ---------- Rendering ----------
+function render(){
+  document.getElementById("monthLbl").textContent = MONTHS[curDate.getMonth()]+" "+curDate.getFullYear();
+  const tx = txInMonth();
+  const inc = tx.filter(t=>t.type==="income").reduce((s,t)=>s+t.amount,0);
+  const exp = tx.filter(t=>t.type==="expense").reduce((s,t)=>s+t.amount,0);
+  const incDebit = tx.filter(t=>t.type==="income" && !isCredit(t.accountId)).reduce((s,t)=>s+t.amount,0);
+  const expDebit = tx.filter(t=>t.type==="expense" && !isCredit(t.accountId)).reduce((s,t)=>s+t.amount,0);
+  const net = inc-exp;
+  document.getElementById("sInc").textContent = fmt(inc);
+  document.getElementById("sExp").textContent = fmt(exp);
+  const netEl = document.getElementById("sNet");
+  netEl.textContent = fmt(net);
+  netEl.className = "val "+(net>=0?"pos":"neg");
+  renderSafe(tx, incDebit, expDebit);
+  renderAccounts(tx);
+  renderAcctManage();
+  renderDonut(tx, exp);
+  renderOvBudget(tx);
+  renderRecent(tx);
+  renderTxList(tx);
+  renderBudgetList(tx);
+  renderGoals();
+}
+
+function renderAccounts(tx){
+  const el=document.getElementById("accountList"); if(!el) return;
+  if(state.accounts.length===0){ el.innerHTML='<div class="empty">Du har ingen kontoer ennå.<br>Opprett dine egne – f.eks. brukskonto, lønnskonto eller kredittkort.<br><br><button class="btn" data-addacct="1" style="max-width:280px;margin:0 auto">+ Opprett din første konto</button></div>'; return; }
+  el.innerHTML=state.accounts.map(a=>{
+    const credit=a.type==="credit";
+    const inc=tx.filter(t=>t.type==="income"&&t.accountId===a.id).reduce((s,t)=>s+t.amount,0);
+    const exp=tx.filter(t=>t.type==="expense"&&t.accountId===a.id).reduce((s,t)=>s+t.amount,0);
+    const trIn=tx.filter(t=>t.type==="transfer"&&t.toId===a.id).reduce((s,t)=>s+t.amount,0);
+    const trOut=tx.filter(t=>t.type==="transfer"&&t.fromId===a.id).reduce((s,t)=>s+t.amount,0);
+    if(credit){
+      const owed=exp-inc; // ladet minus nedbetalt denne måneden
+      return `<div class="row"><div class="icon">💳</div><div class="info"><div class="t">${esc(a.name)} <span class="pill" style="background:#fdeeee;color:var(--expense)">Gjeld</span></div><div class="s">Ladet ${fmt(exp)} · nedbetalt ${fmt(inc)}</div></div><div class="amt ${owed>0?'expense':'income'}">${owed>0?'−'+fmt(owed):fmt(-owed)}</div></div>`;
+    }
+    const flow=inc-exp+trIn-trOut;
+    return `<div class="row"><div class="icon">🏦</div><div class="info"><div class="t">${esc(a.name)}</div><div class="s">Inn ${fmt(inc+trIn)} · ut ${fmt(exp+trOut)}</div></div><div class="amt ${flow>=0?'income':'expense'}">${flow>=0?'+':'−'}${fmt(Math.abs(flow))}</div></div>`;
+  }).join("");
+}
+
+function daysInfo(){
+  const now=new Date();
+  const sameMonth = monthKey(curDate)===monthKey(now);
+  const dim=new Date(curDate.getFullYear(), curDate.getMonth()+1, 0).getDate();
+  const future = curDate > now && !sameMonth;
+  let left;
+  if(sameMonth) left = dim - now.getDate() + 1;
+  else if(future) left = dim;
+  else left = 0; // past month
+  return {sameMonth, future, dim, left};
+}
+function renderSafe(tx, inc, exp){
+  const el=document.getElementById("safeToSpend");
+  const totalBudget=Object.values(state.budgets).reduce((a,b)=>a+(b>0?b:0),0);
+  const useBudget = totalBudget>0;
+  const base = useBudget ? totalBudget : inc;
+  const remaining = base - exp;
+  const di=daysInfo();
+  const basisTxt = useBudget ? "budsjett" : "inntekt";
+  let perDay="";
+  if(di.left>0 && remaining>0){
+    perDay=`<div class="small" style="margin-top:6px">≈ <b style="color:var(--txt)">${fmt(remaining/di.left)}</b> per dag i ${di.left} dager igjen</div>`;
+  }
+  if(base<=0){
+    el.innerHTML='<div class="empty">Sett et budsjett eller registrer inntekt for å se hvor mye du trygt kan bruke.</div>';
+    return;
+  }
+  const pct=Math.max(0,Math.min(remaining/base*100,100));
+  const over=remaining<0;
+  const creditSpend=txInMonth().filter(t=>t.type==="expense"&&isCredit(t.accountId)).reduce((s,t)=>s+t.amount,0);
+  const note=creditSpend>0?`<div class="small" style="margin-top:6px">💳 ${fmt(creditSpend)} kredittkortkjøp holdes utenfor (regnes når kortet betales)</div>`:"";
+  el.innerHTML=`
+    <div style="font-size:30px;font-weight:800;color:${over?'var(--expense)':'var(--income)'}">${fmt(remaining)}</div>
+    <div class="small">${over?'over '+basisTxt+' denne måneden':'igjen av '+basisTxt+' denne måneden'}</div>
+    <div class="bar" style="margin-top:8px;height:11px"><span class="${over?'over':''}" style="width:${over?100:pct}%;background:${over?'var(--expense)':'var(--income)'}"></span></div>
+    ${perDay}${note}`;
+}
+
+function renderDonut(tx, expTotal){
+  const el = document.getElementById("donut");
+  const byCat = {};
+  tx.filter(t=>t.type==="expense").forEach(t=>{ byCat[t.category]=(byCat[t.category]||0)+t.amount; });
+  const entries = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  if(entries.length===0){ el.innerHTML='<div class="empty">Ingen utgifter registrert.</div>'; return; }
+  const colors=["#007272","#28b482","#4bbed2","#fdbb31","#6e2382","#dc2a2a","#a5e1d2","#ff5400","#23195a","#14555a"];
+  let acc=0; const r=52, c=2*Math.PI*r; let segs="";
+  entries.forEach((e,i)=>{
+    const frac=e[1]/expTotal; const len=frac*c;
+    segs+=`<circle r="${r}" cx="70" cy="70" fill="none" stroke="${colors[i%colors.length]}" stroke-width="20" stroke-dasharray="${len} ${c-len}" stroke-dashoffset="${-acc}" transform="rotate(-90 70 70)"/>`;
+    acc+=len;
+  });
+  let legend = entries.map((e,i)=>`<div class="row" style="padding:7px 0"><span style="width:12px;height:12px;border-radius:3px;background:${colors[i%colors.length]};display:inline-block;flex-shrink:0"></span><div class="info"><div class="t" style="font-size:14px">${e[0]}</div></div><div class="small">${Math.round(e[1]/expTotal*100)}%</div><div class="amt" style="font-size:14px;margin-left:10px">${fmt(e[1])}</div></div>`).join("");
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><svg viewBox="0 0 140 140" style="width:140px;height:140px;flex-shrink:0">${segs}<text x="70" y="66" text-anchor="middle" fill="#5c7375" font-size="11">Utgift</text><text x="70" y="84" text-anchor="middle" fill="#00343e" font-size="15" font-weight="700">${fmtN(expTotal)}</text></svg><div style="flex:1;min-width:180px">${legend}</div></div>`;
+}
+
+function renderOvBudget(tx){
+  const el=document.getElementById("ovBudget");
+  const cats=Object.keys(state.budgets).filter(c=>state.budgets[c]>0);
+  if(cats.length===0){ el.innerHTML='<div class="empty">Ingen budsjett satt. Gå til Budsjett-fanen.</div>'; return; }
+  const spent={}; tx.filter(t=>t.type==="expense").forEach(t=>spent[t.category]=(spent[t.category]||0)+t.amount);
+  el.innerHTML=cats.map(c=>lineHtml(c,spent[c]||0,state.budgets[c])).join("");
+}
+function lineHtml(cat,spent,budget){
+  const pct=budget>0?Math.min(spent/budget*100,100):0;
+  const over=spent>budget; const warn=!over && spent/budget>=0.85;
+  const cls=over?"over":(warn?"warn":"");
+  const left=budget-spent;
+  return `<div class="budgetline"><div class="top"><span>${icon(cat)} ${cat}</span><span class="r">${fmt(spent)} / ${fmt(budget)}</span></div><div class="bar"><span class="${cls}" style="width:${pct}%"></span></div><div class="small" style="margin-top:3px;color:${over?'var(--expense)':'var(--muted)'}">${over?("Over med "+fmt(-left)):(fmt(left)+" igjen")}</div></div>`;
+}
+
+function renderRecent(tx){
+  const el=document.getElementById("ovRecent");
+  const rec=[...tx].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,5);
+  if(rec.length===0){ el.innerHTML='<div class="empty">Ingen transaksjoner ennå. Trykk ＋ for å legge til.</div>'; return; }
+  el.innerHTML=rec.map(t=>txRow(t,false)).join("");
+}
+function txRow(t,withDel){
+  const del=withDel?`<button class="del" data-del="${t.id}">🗑</button>`:"";
+  if(t.type==="transfer"){
+    return `<div class="row"><div class="icon">🔁</div><div class="info"><div class="t">Overføring${t.note?' · <span class="small">'+esc(t.note)+'</span>':''}</div><div class="s">${fmtDate(t.date)} · ${esc(accName(t.fromId))} → ${esc(accName(t.toId))}</div></div><div class="amt" style="color:var(--muted)">${fmt(t.amount)}</div>${del}</div>`;
+  }
+  const sign=t.type==="income"?"+":"−";
+  const nm=t.accountId?accName(t.accountId):(t.account||"");
+  const acct=nm?' · '+esc(nm):'';
+  return `<div class="row"><div class="icon">${icon(t.category)}</div><div class="info"><div class="t">${t.category}${t.note?' · <span class="small">'+esc(t.note)+'</span>':''}</div><div class="s">${fmtDate(t.date)}${acct}</div></div><div class="amt ${t.type}">${sign}${fmt(t.amount)}</div>${del}</div>`;
+}
+function renderAcctManage(){
+  const el=document.getElementById("acctManage"); if(!el) return;
+  if(state.accounts.length===0){ el.innerHTML='<div class="empty">Ingen kontoer.</div>'; return; }
+  el.innerHTML=state.accounts.map(a=>`<div class="row" data-editacct="${a.id}" style="cursor:pointer"><div class="icon">${a.type==="credit"?"💳":"🏦"}</div><div class="info"><div class="t">${esc(a.name)}</div><div class="s">${a.type==="credit"?"Kredittkort (gjeld)":"Brukskonto"}</div></div><span class="small">✏️</span></div>`).join("");
+}
+function accountSheet(id){
+  const a=id?accById(id):null;
+  openSheet(`
+    <div class="sheethead"><h2>${a?"Rediger konto":"Ny konto"}</h2><button id="x">×</button></div>
+    <label>Kontonavn</label>
+    <input id="aName" type="text" value="${a?esc(a.name):''}" placeholder="f.eks. Brukskonto">
+    <label>Kontotype</label>
+    <div class="seg" id="aTypeSeg">
+      <button data-t="debit" class="${!a||a.type==="debit"?"on":""}">🏦 Brukskonto</button>
+      <button data-t="credit" class="${a&&a.type==="credit"?"on exp":""}">💳 Kredittkort</button>
+    </div>
+    <div class="hint">Kredittkort behandles som gjeld og holdes utenfor «trygt å bruke».</div>
+    <button class="btn" id="saveAcct" style="margin-top:16px">Lagre</button>
+    ${a?'<button class="btn danger" id="delAcct" style="margin-top:10px">Slett konto</button>':''}
+  `);
+  let aType=a?a.type:"debit";
+  document.getElementById("x").onclick=closeSheet;
+  const seg=document.getElementById("aTypeSeg");
+  seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{ aType=b.dataset.t; seg.querySelectorAll("button").forEach(x=>x.className=""); b.className="on"+(aType==="credit"?" exp":""); });
+  document.getElementById("saveAcct").onclick=()=>{
+    const name=document.getElementById("aName").value.trim();
+    if(!name){ alert("Skriv inn navn."); return; }
+    if(a){ a.name=name; a.type=aType; } else state.accounts.push({id:uid(),name,type:aType});
+    save(); closeSheet(); render();
+  };
+  if(a) document.getElementById("delAcct").onclick=()=>{
+    const used=state.transactions.some(t=>t.accountId===a.id||t.fromId===a.id||t.toId===a.id);
+    if(used && !confirm("Kontoen brukes av transaksjoner. Disse blir stående som «Ukjent konto». Slette likevel?")) return;
+    if(!used && !confirm("Slette kontoen?")) return;
+    state.accounts=state.accounts.filter(x=>x.id!==a.id);
+    if(acctFilter===a.id) acctFilter="all";
+    save(); closeSheet(); render();
+  };
+}
+function renderAcctChips(){
+  const el=document.getElementById("acctChips"); if(!el) return;
+  const chips=[["all","Alle"]].concat(state.accounts.map(a=>[a.id,a.name]));
+  el.innerHTML=chips.map(([id,nm])=>`<button class="chip${acctFilter===id?' on':''}" data-acct="${id}">${esc(nm)}</button>`).join("");
+}
+function renderTxList(tx){
+  const el=document.getElementById("txList");
+  renderAcctChips();
+  let list=[...tx];
+  if(acctFilter!=="all") list=list.filter(t=> t.accountId===acctFilter || t.fromId===acctFilter || t.toId===acctFilter);
+  list.sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  if(list.length===0){ el.innerHTML='<div class="empty">Ingen transaksjoner'+(acctFilter!=="all"?' for denne kontoen':' denne måneden')+'.</div>'; return; }
+  el.innerHTML=list.map(t=>txRow(t,true)).join("");
+}
+
+function renderBudgetList(tx){
+  const el=document.getElementById("budgetList");
+  const cats=state.categories.expense;
+  const spent={}; tx.filter(t=>t.type==="expense").forEach(t=>spent[t.category]=(spent[t.category]||0)+t.amount);
+  const withB=cats.filter(c=>state.budgets[c]>0);
+  const withoutB=cats.filter(c=>!(state.budgets[c]>0));
+  let html="";
+  if(withB.length) html+=withB.map(c=>`<div data-editcat="${c}" style="cursor:pointer">${lineHtml(c,spent[c]||0,state.budgets[c])}</div>`).join("");
+  else html+='<div class="empty">Ingen budsjett satt ennå.</div>';
+  if(withoutB.length){
+    html+=`<div class="small" style="margin:14px 0 6px">Uten budsjett (trykk for å sette):</div>`;
+    html+=`<div style="display:flex;flex-wrap:wrap;gap:8px">`+withoutB.map(c=>`<span class="pill" data-editcat="${c}" style="cursor:pointer">${icon(c)} ${c}</span>`).join("")+`</div>`;
+  }
+  el.innerHTML=html;
+}
+
+function renderGoals(){
+  const el=document.getElementById("goalList");
+  if(state.goals.length===0){ el.innerHTML='<div class="empty">Ingen sparemål ennå.</div>'; return; }
+  el.innerHTML=state.goals.map(g=>{
+    const pct=g.target>0?Math.min(g.saved/g.target*100,100):0;
+    const done=g.saved>=g.target && g.target>0;
+    return `<div class="goalcard" style="margin-bottom:18px"><div class="top"><span class="name">${done?"✅ ":""}${esc(g.name)}</span><span class="small">${Math.round(pct)}%</span></div><div class="sub">${fmt(g.saved)} av ${fmt(g.target)}</div><div class="bar"><span style="width:${pct}%;background:${done?'var(--income)':'var(--accent)'}"></span></div><div class="btnrow" style="margin-top:10px"><button class="btn sec" data-goaladd="${g.id}">+ Legg til beløp</button><button class="btn sec" data-goaledit="${g.id}">Rediger</button></div></div>`;
+  }).join("");
+}
+
+function esc(s){ return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m])); }
+function fmtDate(iso){ const d=new Date(iso+"T00:00:00"); return d.getDate()+". "+MONTHS[d.getMonth()].slice(0,3); }
+
+// ---------- Modals ----------
+const modal=document.getElementById("modal"), sheet=document.getElementById("sheet");
+function openSheet(html){ sheet.innerHTML=html; modal.classList.add("open"); }
+function closeSheet(){ modal.classList.remove("open"); }
+modal.addEventListener("click",e=>{ if(e.target===modal) closeSheet(); });
+
+function txSheet(){
+  if(state.accounts.length===0){ alert("Opprett minst én konto først."); accountSheet(null); return; }
+  const today=new Date().toISOString().slice(0,10);
+  const opts=t=>state.categories[t].map(c=>`<option value="${c}">${icon(c)} ${c}</option>`).join("");
+  const acctOpts=sel=>state.accounts.map(a=>`<option value="${a.id}" ${a.id===sel?"selected":""}>${a.type==="credit"?"💳":"🏦"} ${esc(a.name)}</option>`).join("");
+  openSheet(`
+    <div class="sheethead"><h2>Ny transaksjon</h2><button id="x">×</button></div>
+    <div class="seg" id="typeSeg">
+      <button data-t="expense" class="on exp">Utgift</button>
+      <button data-t="income">Inntekt</button>
+      <button data-t="transfer">Overføring</button>
+    </div>
+    <label>Beløp (kr)</label>
+    <input id="fAmt" type="number" inputmode="decimal" placeholder="0" step="1">
+    <div id="catBlock">
+      <label>Kategori</label>
+      <select id="fCat">${opts("expense")}</select>
+    </div>
+    <div id="acctBlock">
+      <label>Konto</label>
+      <select id="fAcct">${acctOpts(state.accounts[0]&&state.accounts[0].id)}</select>
+    </div>
+    <div id="transferBlock" style="display:none">
+      <label>Fra konto</label>
+      <select id="fFrom">${acctOpts()}</select>
+      <label>Til konto</label>
+      <select id="fTo">${acctOpts(state.accounts[1]&&state.accounts[1].id)}</select>
+    </div>
+    <label>Dato</label>
+    <input id="fDate" type="date" value="${today}">
+    <label>Notat (valgfritt)</label>
+    <input id="fNote" type="text" placeholder="f.eks. Rema 1000">
+    <button class="btn" id="saveTx" style="margin-top:18px">Lagre</button>
+  `);
+  curType="expense";
+  document.getElementById("x").onclick=closeSheet;
+  const seg=document.getElementById("typeSeg");
+  if(state.accounts.length<2){ const tb=seg.querySelector('[data-t="transfer"]'); if(tb) tb.style.display="none"; }
+  seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    curType=b.dataset.t;
+    seg.querySelectorAll("button").forEach(x=>x.className="");
+    b.className="on"+(curType==="expense"?" exp":"");
+    const isTr=curType==="transfer";
+    document.getElementById("catBlock").style.display=isTr?"none":"block";
+    document.getElementById("acctBlock").style.display=isTr?"none":"block";
+    document.getElementById("transferBlock").style.display=isTr?"block":"none";
+    if(!isTr) document.getElementById("fCat").innerHTML=opts(curType);
+  });
+  document.getElementById("fAmt").focus();
+  document.getElementById("saveTx").onclick=()=>{
+    const amt=parseFloat(document.getElementById("fAmt").value);
+    if(!amt||amt<=0){ alert("Skriv inn et beløp."); return; }
+    const date=document.getElementById("fDate").value, note=document.getElementById("fNote").value.trim();
+    if(curType==="transfer"){
+      const fromId=document.getElementById("fFrom").value, toId=document.getElementById("fTo").value;
+      if(fromId===toId){ alert("Velg to forskjellige kontoer."); return; }
+      state.transactions.push({id:uid(),type:"transfer",amount:amt,date,note,fromId,toId});
+    }else{
+      state.transactions.push({id:uid(),type:curType,amount:amt,category:document.getElementById("fCat").value,date,note,accountId:document.getElementById("fAcct").value});
+    }
+    save(); closeSheet(); render();
+  };
+}
+
+function catSheet(existing){
+  const cur=existing||"";
+  const isExisting=!!existing;
+  openSheet(`
+    <div class="sheethead"><h2>${isExisting?"Rediger budsjett":"Ny kategori"}</h2><button id="x">×</button></div>
+    <label>Kategorinavn</label>
+    <input id="cName" type="text" value="${esc(cur)}" ${isExisting?"disabled":""} placeholder="f.eks. Trening">
+    <label>Månedsbudsjett (kr)</label>
+    <input id="cBudget" type="number" inputmode="decimal" value="${isExisting?(state.budgets[cur]||''):''}" placeholder="0">
+    <button class="btn" id="saveCat" style="margin-top:18px">Lagre</button>
+    ${isExisting?'<button class="btn danger" id="delCat" style="margin-top:10px">Fjern budsjett</button>':''}
+  `);
+  document.getElementById("x").onclick=closeSheet;
+  document.getElementById("saveCat").onclick=()=>{
+    const name=document.getElementById("cName").value.trim();
+    if(!name){ alert("Skriv inn navn."); return; }
+    const b=parseFloat(document.getElementById("cBudget").value)||0;
+    if(!state.categories.expense.includes(name)) state.categories.expense.push(name);
+    state.budgets[name]=b;
+    save(); closeSheet(); render();
+  };
+  if(isExisting) document.getElementById("delCat").onclick=()=>{ delete state.budgets[cur]; save(); closeSheet(); render(); };
+}
+
+function goalSheet(existing){
+  const g=existing?state.goals.find(x=>x.id===existing):null;
+  openSheet(`
+    <div class="sheethead"><h2>${g?"Rediger sparemål":"Nytt sparemål"}</h2><button id="x">×</button></div>
+    <label>Navn</label>
+    <input id="gName" type="text" value="${g?esc(g.name):''}" placeholder="f.eks. Sommerferie">
+    <label>Målbeløp (kr)</label>
+    <input id="gTarget" type="number" inputmode="decimal" value="${g?g.target:''}" placeholder="0">
+    <label>Spart så langt (kr)</label>
+    <input id="gSaved" type="number" inputmode="decimal" value="${g?g.saved:0}" placeholder="0">
+    <button class="btn" id="saveGoal" style="margin-top:18px">Lagre</button>
+    ${g?'<button class="btn danger" id="delGoal" style="margin-top:10px">Slett sparemål</button>':''}
+  `);
+  document.getElementById("x").onclick=closeSheet;
+  document.getElementById("saveGoal").onclick=()=>{
+    const name=document.getElementById("gName").value.trim();
+    const target=parseFloat(document.getElementById("gTarget").value)||0;
+    const saved=parseFloat(document.getElementById("gSaved").value)||0;
+    if(!name||target<=0){ alert("Skriv inn navn og målbeløp."); return; }
+    if(g){ g.name=name; g.target=target; g.saved=saved; }
+    else state.goals.push({id:uid(),name,target,saved});
+    save(); closeSheet(); render();
+  };
+  if(g) document.getElementById("delGoal").onclick=()=>{ if(confirm("Slette sparemålet?")){ state.goals=state.goals.filter(x=>x.id!==g.id); save(); closeSheet(); render(); } };
+}
+
+function goalAddSheet(id){
+  const g=state.goals.find(x=>x.id===id);
+  openSheet(`
+    <div class="sheethead"><h2>Legg til i «${esc(g.name)}»</h2><button id="x">×</button></div>
+    <div class="small">Spart nå: ${fmt(g.saved)} / ${fmt(g.target)}</div>
+    <label>Beløp å legge til (kr)</label>
+    <input id="gAmt" type="number" inputmode="decimal" placeholder="0">
+    <button class="btn" id="saveAdd" style="margin-top:18px">Legg til</button>
+  `);
+  document.getElementById("x").onclick=closeSheet;
+  document.getElementById("gAmt").focus();
+  document.getElementById("saveAdd").onclick=()=>{
+    const a=parseFloat(document.getElementById("gAmt").value);
+    if(!a){ closeSheet(); return; }
+    g.saved=Math.max(0,g.saved+a); save(); closeSheet(); render();
+  };
+}
+
+// ---------- CSV import ----------
+const CAT_RULES=[
+  [/rema|kiwi|coop|meny|bunnpris|\bextra\b|joker|\bspar\b|matkroken|oda|europris|normal/i,"Mat"],
+  [/ruter|\bvy\b|flytoget|bane\s?nor|entur|\bbom\b|autopass|circle\s?k|\bshell\b|esso|uno-?x|drivstoff|parkering|bilkollektiv|taxi|bolt|voi|tier/i,"Transport"],
+  [/husleie|obos|\bleie\b|borettslag|sameie/i,"Bolig"],
+  [/strøm|fjordkraft|tibber|elvia|fortum|hafslund|\bnte\b|lyse/i,"Strøm"],
+  [/netflix|spotify|hbo|max\.com|viaplay|disney|storytel|youtube|icloud|apple\.com|google|nrk|schibsted|adobe|microsoft|patreon/i,"Abonnement"],
+  [/apotek|vitus|\bboots\b|\blege\b|tannlege|helse|sykehus|fysio|optiker/i,"Helse"],
+  [/vinmonopol|restaurant|\bcafe\b|\bkafe\b|burger|pizza|mcdonald|kebab|sushi|\bbar\b|espresso|starbucks|deli|bakeri|foodora|wolt/i,"Restaurant"],
+  [/\bh&m\b|\bhm\b|zara|zalando|\bxxl\b|clas\s?ohlson|jernia|cubus|dressmann|nike|adidas|elkjøp|power\b|komplett/i,"Klær"],
+  [/lønn|salary|utbetaling|refusjon|nav\b|skatteetaten/i,"Lønn"]
+];
+function guessCat(text,type){
+  if(type==="income") return state.categories.income.includes("Lønn")?"Lønn":state.categories.income[0];
+  for(const [re,c] of CAT_RULES) if(re.test(text)) return state.categories.expense.includes(c)?c:"Annet";
+  return "Annet";
+}
+function parseCSV(text){
+  text=text.replace(/^﻿/,"");
+  const firstLine=(text.split(/\r?\n/)[0]||"");
+  const delim=(firstLine.split(";").length > firstLine.split(",").length)?";":",";
+  const rows=[]; let row=[],cur="",q=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){ if(ch=='"'){ if(text[i+1]=='"'){cur+='"';i++;} else q=false; } else cur+=ch; }
+    else if(ch=='"') q=true;
+    else if(ch===delim){ row.push(cur); cur=""; }
+    else if(ch=="\n"){ row.push(cur); rows.push(row); row=[]; cur=""; }
+    else if(ch=="\r"){}
+    else cur+=ch;
+  }
+  if(cur.length||row.length){ row.push(cur); rows.push(row); }
+  return rows.filter(r=>r.some(c=>c.trim()!==""));
+}
+function parseNum(s){
+  if(s==null) return NaN;
+  s=String(s).replace(/[ \s]/g,"").trim();
+  if(!s) return NaN;
+  if(s.indexOf(",")>-1 && s.indexOf(".")>-1) s=s.replace(/\./g,"").replace(",",".");
+  else if(s.indexOf(",")>-1) s=s.replace(",",".");
+  return parseFloat(s);
+}
+function parseDate(s){
+  s=String(s).trim();
+  let m=s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
+  if(m){ let y=m[3]; if(y.length==2) y="20"+y; return y+"-"+m[2].padStart(2,"0")+"-"+m[1].padStart(2,"0"); }
+  m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[1]+"-"+m[2]+"-"+m[3];
+  return null;
+}
+function detectCols(headers){
+  const h=headers.map(x=>x.toLowerCase().trim());
+  const find=(...res)=>{ for(const re of res){ const i=h.findIndex(x=>re.test(x)); if(i>-1) return i; } return -1; };
+  return {
+    date: find(/bokf.*dato/, /^dato$/, /dato/, /date/),
+    text: find(/forklaring/, /tekst/, /beskrivelse/, /melding/, /description|narrative/),
+    out: find(/ut fra konto/, /ut av konto/, /^ut$/, /belastet|debet|debit/),
+    inn: find(/inn på konto/, /inn pa konto/, /^inn$/, /godskrevet|kredit|credit/),
+    amount: find(/^beløp$/, /^beloep$/, /^amount$/, /beløp|amount/)
+  };
+}
+let importRows=null, importHeaders=null;
+function csvSheet(){
+  if(state.accounts.length===0){ alert("Opprett minst én konto før du importerer."); accountSheet(null); return; }
+  const inp=document.createElement("input"); inp.type="file"; inp.accept=".csv,text/csv,.txt";
+  inp.onchange=()=>{ const f=inp.files[0]; if(!f) return; const r=new FileReader();
+    r.onload=()=>{ const rows=parseCSV(r.result); if(rows.length<2){ alert("Fant ingen rader i filen."); return; } importHeaders=rows[0]; importRows=rows.slice(1); mappingSheet(f.name); };
+    r.readAsText(f,"utf-8"); };
+  inp.click();
+}
+function colOpts(sel){ return importHeaders.map((h,i)=>`<option value="${i}" ${i===sel?"selected":""}>${esc(h||("Kolonne "+(i+1)))}</option>`).join(""); }
+function mappingSheet(fname){
+  const c=detectCols(importHeaders);
+  const isDNB = c.date>-1 && (c.out>-1||c.inn>-1||c.amount>-1);
+  openSheet(`
+    <div class="sheethead"><h2>Importer CSV</h2><button id="x">×</button></div>
+    <div class="small" style="margin-bottom:4px">Fil: ${esc(fname)} · ${importRows.length} rader</div>
+    <div class="pill" style="margin-bottom:6px">${isDNB?"✓ Gjenkjente kolonner":"Velg kolonner manuelt"}</div>
+    <label>Dato-kolonne</label><select id="mDate">${colOpts(c.date)}</select>
+    <label>Tekst-kolonne</label><select id="mText">${colOpts(c.text)}</select>
+    <label>Beløp – én kolonne (minus = utgift)</label>
+    <select id="mAmt"><option value="-1">– bruk to kolonner i stedet –</option>${importHeaders.map((h,i)=>`<option value="${i}" ${i===c.amount?"selected":""}>${esc(h||("Kolonne "+(i+1)))}</option>`).join("")}</select>
+    <label>Ut fra konto (utgift)</label><select id="mOut"><option value="-1">–</option>${importHeaders.map((h,i)=>`<option value="${i}" ${i===c.out?"selected":""}>${esc(h||("Kolonne "+(i+1)))}</option>`).join("")}</select>
+    <label>Inn på konto (inntekt)</label><select id="mInn"><option value="-1">–</option>${importHeaders.map((h,i)=>`<option value="${i}" ${i===c.inn?"selected":""}>${esc(h||("Kolonne "+(i+1)))}</option>`).join("")}</select>
+    <label>Hvilken konto gjelder filen?</label>
+    <select id="mAcct">${state.accounts.map(a=>`<option value="${a.id}">${a.type==="credit"?"💳":"🏦"} ${esc(a.name)}</option>`).join("")}</select>
+    <div style="margin:14px 0 6px" class="small">Forhåndsvisning:</div>
+    <div id="mPreview" class="card2" style="background:var(--card2);border-radius:12px;padding:10px"></div>
+    <button class="btn" id="doImport" style="margin-top:16px">Importer</button>
+  `);
+  document.getElementById("x").onclick=closeSheet;
+  ["mDate","mText","mAmt","mOut","mInn"].forEach(id=>document.getElementById(id).onchange=updatePreview);
+  updatePreview();
+  document.getElementById("doImport").onclick=runImport;
+}
+function buildImportTx(){
+  const di=+document.getElementById("mDate").value, ti=+document.getElementById("mText").value;
+  const ai=+document.getElementById("mAmt").value, oi=+document.getElementById("mOut").value, ii=+document.getElementById("mInn").value;
+  const acctId=document.getElementById("mAcct").value;
+  const out=[];
+  for(const row of importRows){
+    const date=parseDate(row[di]||""); if(!date) continue;
+    const note=(row[ti]||"").trim();
+    let amount, type;
+    if(ai>=0){ const v=parseNum(row[ai]); if(isNaN(v)||v===0) continue; type=v<0?"expense":"income"; amount=Math.abs(v); }
+    else{ const o=oi>=0?parseNum(row[oi]):NaN, inn=ii>=0?parseNum(row[ii]):NaN;
+      if(!isNaN(o)&&o!==0){ type="expense"; amount=Math.abs(o); }
+      else if(!isNaN(inn)&&inn!==0){ type="income"; amount=Math.abs(inn); }
+      else continue; }
+    out.push({id:uid(),type,amount,category:guessCat(note,type),date,note,accountId:acctId});
+  }
+  return out;
+}
+function updatePreview(){
+  const el=document.getElementById("mPreview");
+  const tx=buildImportTx();
+  if(tx.length===0){ el.innerHTML='<div class="empty" style="padding:8px">Ingen gyldige rader med disse kolonnene.</div>'; return; }
+  el.innerHTML=`<div class="small" style="margin-bottom:6px">${tx.length} transaksjoner funnet. Første 4:</div>`+
+    tx.slice(0,4).map(t=>`<div class="row" style="padding:6px 0"><div class="info"><div class="t" style="font-size:14px">${icon(t.category)} ${t.category}${t.note?' · <span class="small">'+esc(t.note.slice(0,28))+'</span>':''}</div><div class="s">${fmtDate(t.date)}</div></div><div class="amt ${t.type}" style="font-size:14px">${t.type==="income"?"+":"−"}${fmt(t.amount)}</div></div>`).join("");
+}
+function runImport(){
+  const tx=buildImportTx();
+  if(tx.length===0){ alert("Ingen transaksjoner å importere."); return; }
+  const key=t=>t.date+"|"+t.amount+"|"+t.type+"|"+(t.accountId||"")+"|"+(t.note||"").toLowerCase();
+  const seen=new Set(state.transactions.map(key));
+  let added=0, dup=0;
+  for(const t of tx){ const k=key(t);
+    if(seen.has(k)){ dup++; continue; } seen.add(k); state.transactions.push(t); added++; }
+  save(); closeSheet();
+  // jump to month of last imported tx
+  if(added){ const last=tx[tx.length-1].date; curDate=new Date(last+"T00:00:00"); }
+  render();
+  alert(`Importert ${added} transaksjoner.`+(dup?` ${dup} duplikater ble hoppet over.`:""));
+}
+
+// ---------- Onboarding ----------
+let OB=null;
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function cap(s){ s=String(s).trim(); return s.charAt(0).toUpperCase()+s.slice(1); }
+function startOnboarding(){
+  OB={step:0, salary:state.salary||"", payday:state.payday||25, accounts:[], budgets:{}};
+  document.getElementById("onboard").classList.add("open"); renderOb();
+}
+function finishOnboarding(commit){
+  document.getElementById("onboard").classList.remove("open");
+  if(commit){
+    const created=OB.accounts.map(a=>({id:uid(),name:a.name,type:a.type}));
+    state.accounts=state.accounts.concat(created);
+    state.salary=parseFloat(OB.salary)||0; state.payday=OB.payday;
+    Object.keys(OB.budgets).forEach(c=>{ if(OB.budgets[c]>0){ if(!state.categories.expense.includes(c)) state.categories.expense.push(c); state.budgets[c]=OB.budgets[c]; }});
+    if(state.salary>0 && created.length){
+      const lonn=created.find(a=>/lønn|lonn/i.test(a.name)) || created.find(a=>a.type==="debit") || created[0];
+      const now=new Date(); const dim=new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+      const day=String(Math.min(OB.payday,dim)).padStart(2,"0");
+      const date=now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0")+"-"+day;
+      state.transactions.push({id:uid(),type:"income",amount:state.salary,category:"Lønn",date,note:"Månedslønn",accountId:lonn.id});
+    }
+  }
+  state.onboarded=true; save(); render();
+}
+function obSet(title,sub){
+  document.getElementById("obTitle").textContent=title;
+  document.getElementById("obSub").textContent=sub||"";
+  document.getElementById("obDots").innerHTML=[0,1,2,3].map(i=>`<span class="${i<=OB.step?'on':''}"></span>`).join("");
+}
+function obAcctListHtml(){
+  if(OB.accounts.length===0) return '<div class="small">Ingen kontoer valgt ennå.</div>';
+  return OB.accounts.map((a,i)=>`<div class="acctmini"><span>${a.type==='credit'?'💳':'🏦'}</span><div class="info"><b>${esc(a.name)}</b> <span class="small">${a.type==='credit'?'kredittkort':'konto'}</span></div><button class="rm" data-i="${i}">✕</button></div>`).join("");
+}
+function prepBudget(){
+  const s=parseFloat(OB.salary)||0; OB.budgets={};
+  if(s<=0) return;
+  const alloc={"Bolig":30,"Mat":12,"Transport":8,"Strøm":3,"Fritid":6,"Restaurant":5,"Klær":3,"Abonnement":2};
+  Object.keys(alloc).forEach(c=>{ OB.budgets[c]=Math.round(s*alloc[c]/100/100)*100; });
+}
+function renderOb(){
+  const body=document.getElementById("obBody"), foot=document.getElementById("obFoot");
+  if(OB.step===0){
+    obSet("Velkommen! 👋","Sett opp budsjettet på under ett minutt.");
+    body.innerHTML=`<div class="card"><p style="margin-top:0">Vi setter opp dette sammen:</p>
+      <div class="row"><div class="icon">💰</div><div class="info"><div class="t">Månedslønn</div><div class="s">Så appen vet hva du har å rutte med</div></div></div>
+      <div class="row"><div class="icon">🏦</div><div class="info"><div class="t">Kontoene dine</div><div class="s">Bruks-, lønns-, sparekonto, kredittkort ...</div></div></div>
+      <div class="row"><div class="icon">🎯</div><div class="info"><div class="t">Budsjettforslag</div><div class="s">Vi foreslår en fordeling basert på lønna</div></div></div>
+      <div class="row"><div class="icon">✨</div><div class="info"><div class="t">Kommandolinje</div><div class="s">Styr appen med vanlig språk etterpå</div></div></div></div>`;
+    foot.innerHTML=`<button class="btn sec" id="obSkip">Hopp over</button><button class="btn" id="obNext">Kom i gang</button>`;
+    document.getElementById("obSkip").onclick=()=>finishOnboarding(false);
+    document.getElementById("obNext").onclick=()=>{ OB.step=1; renderOb(); };
+  } else if(OB.step===1){
+    obSet("Hva er månedslønnen din?","Etter skatt – det du faktisk får inn. Kan endres senere.");
+    body.innerHTML=`
+      <label>Månedslønn (kr)</label>
+      <input id="obSalary" type="number" inputmode="decimal" placeholder="f.eks. 35000" value="${OB.salary||''}">
+      <label>Hvilken dag i måneden får du lønn?</label>
+      <input id="obPayday" type="number" min="1" max="31" value="${OB.payday}">
+      <div class="hint">Vi legger inn lønna som en inntekt for denne måneden automatisk.</div>`;
+    foot.innerHTML=`<button class="btn sec" id="obBack">Tilbake</button><button class="btn" id="obNext">Neste</button>`;
+    document.getElementById("obBack").onclick=()=>{ OB.step=0; renderOb(); };
+    document.getElementById("obNext").onclick=()=>{
+      OB.salary=document.getElementById("obSalary").value;
+      OB.payday=Math.min(31,Math.max(1,parseInt(document.getElementById("obPayday").value)||25));
+      OB.step=2; renderOb();
+    };
+  } else if(OB.step===2){
+    obSet("Hvilke kontoer har du?","Trykk for å legge til. Endre alt senere.");
+    const presets=[["Brukskonto","debit"],["Lønnskonto","debit"],["Regningskonto","debit"],["Sparekonto","debit"],["Mastercard","credit"],["Visa","credit"]];
+    body.innerHTML=`
+      <div class="preset" id="obPresets">${presets.map(p=>`<button data-n="${p[0]}" data-t="${p[1]}" class="${OB.accounts.some(a=>a.name===p[0])?'picked':''}">${p[1]==='credit'?'💳':'🏦'} ${p[0]}</button>`).join("")}</div>
+      <label style="margin-top:16px">Egen konto</label>
+      <div style="display:flex;gap:8px"><input id="obCustom" type="text" placeholder="Kontonavn"><button class="btn sec" id="obAddCustom" style="width:auto;padding:0 18px">+</button></div>
+      <div class="seg" id="obCustomType" style="margin-top:8px"><button data-t="debit" class="on">🏦 Konto</button><button data-t="credit">💳 Kredittkort</button></div>
+      <div id="obAcctList" style="margin-top:14px">${obAcctListHtml()}</div>`;
+    foot.innerHTML=`<button class="btn sec" id="obBack">Tilbake</button><button class="btn" id="obNext">Neste</button>`;
+    let ctype="debit";
+    document.querySelectorAll("#obPresets button").forEach(b=>b.onclick=()=>{
+      const n=b.dataset.n, i=OB.accounts.findIndex(a=>a.name===n);
+      if(i>-1) OB.accounts.splice(i,1); else OB.accounts.push({name:n,type:b.dataset.t});
+      renderOb();
+    });
+    const seg=document.getElementById("obCustomType");
+    seg.querySelectorAll("button").forEach(b=>b.onclick=()=>{ ctype=b.dataset.t; seg.querySelectorAll("button").forEach(x=>x.className=""); b.className="on"+(ctype==="credit"?" exp":""); });
+    document.getElementById("obAddCustom").onclick=()=>{ const v=document.getElementById("obCustom").value.trim(); if(!v) return; if(!OB.accounts.some(a=>a.name.toLowerCase()===v.toLowerCase())) OB.accounts.push({name:cap(v),type:ctype}); renderOb(); };
+    document.querySelectorAll("#obAcctList .rm").forEach(b=>b.onclick=()=>{ OB.accounts.splice(+b.dataset.i,1); renderOb(); });
+    document.getElementById("obBack").onclick=()=>{ OB.step=1; renderOb(); };
+    document.getElementById("obNext").onclick=()=>{ if(OB.accounts.length===0 && !confirm("Du har ikke lagt til noen kontoer. Fortsette likevel?")) return; prepBudget(); OB.step=3; renderOb(); };
+  } else if(OB.step===3){
+    obSet("Forslag til budsjett","Basert på lønna di. Juster eller behold.");
+    const cats=Object.keys(OB.budgets);
+    const total=Object.values(OB.budgets).reduce((a,b)=>a+b,0);
+    body.innerHTML= cats.length ? `
+      <div class="card">${cats.map(c=>`<div class="sugg"><span>${icon(c)} ${c}</span><input type="number" data-c="${c}" value="${OB.budgets[c]}"></div>`).join("")}</div>
+      <div class="small">Sum budsjett: <b id="obSum">${fmt(total)}</b>${OB.salary?` av ${fmt(parseFloat(OB.salary)||0)} lønn`:''}</div>
+      <div class="hint">Dette er kun et forslag (ca. 30 % bolig, 12 % mat osv.). Juster fritt.</div>`
+      : `<div class="empty">Uten lønn foreslår vi ikke budsjett nå – du kan sette det når som helst senere.</div>`;
+    foot.innerHTML=`<button class="btn sec" id="obBack">Tilbake</button><button class="btn" id="obFinish">Fullfør ✓</button>`;
+    document.querySelectorAll("#obBody input[data-c]").forEach(inp=>inp.oninput=()=>{ OB.budgets[inp.dataset.c]=parseFloat(inp.value)||0; const s=document.getElementById("obSum"); if(s) s.textContent=fmt(Object.values(OB.budgets).reduce((a,b)=>a+b,0)); });
+    document.getElementById("obBack").onclick=()=>{ OB.step=2; renderOb(); };
+    document.getElementById("obFinish").onclick=()=>finishOnboarding(true);
+  }
+}
+
+// ---------- Naturlig-språk kommandolinje ----------
+function cmdNum(s){ const m=String(s).replace(/kr/gi,"").match(/\d[\d  .]*\d|\d/); return m?parseNum(m[0]):NaN; }
+function findAccount(txt){ const l=txt.toLowerCase(); return state.accounts.find(a=>l.includes(a.name.toLowerCase())); }
+function matchCategory(word){ const w=word.toLowerCase(); const all=state.categories.expense; return all.find(c=>c.toLowerCase()===w) || all.find(c=>c.toLowerCase().startsWith(w)); }
+function findCategoryInText(t,type){
+  const list=type==="income"?state.categories.income:state.categories.expense;
+  const hit=list.find(c=>t.includes(c.toLowerCase()));
+  if(hit) return hit;
+  return type==="income" ? (state.categories.income.includes("Lønn")?"Lønn":state.categories.income[0]) : guessCat(t,"expense");
+}
+function parseCommand(raw){
+  const text=(raw||"").trim(); if(!text) return {ok:false,msg:"Skriv en kommando."};
+  const t=text.toLowerCase();
+  // Navigasjon
+  if(/denne måned/.test(t)){ curDate=new Date(); render(); return {ok:true,msg:"Viser "+MONTHS[curDate.getMonth()]+" "+curDate.getFullYear()}; }
+  if(/forrige/.test(t) && /(måned|mnd)/.test(t)){ curDate.setMonth(curDate.getMonth()-1); render(); return {ok:true,msg:"Viser "+MONTHS[curDate.getMonth()]+" "+curDate.getFullYear()}; }
+  if(/neste/.test(t) && /(måned|mnd)/.test(t)){ curDate.setMonth(curDate.getMonth()+1); render(); return {ok:true,msg:"Viser "+MONTHS[curDate.getMonth()]+" "+curDate.getFullYear()}; }
+  if(/(^| )vis /.test(t)){
+    const mi=MONTHS.findIndex(m=>t.includes(m));
+    if(mi>-1){ const ym=t.match(/(20\d\d)/); curDate=new Date(ym?+ym[1]:curDate.getFullYear(), mi, 1); render(); return {ok:true,msg:"Viser "+MONTHS[mi]+" "+curDate.getFullYear()}; }
+  }
+  // Overføring
+  if(/overf/.test(t)){
+    const amt=cmdNum(t); const fm=t.match(/fra (.+?) til (.+)$/);
+    if(!amt||!fm) return {ok:false,msg:"Prøv: «overfør 500 fra brukskonto til sparekonto»"};
+    const from=findAccount(fm[1]), to=findAccount(fm[2]);
+    if(!from||!to) return {ok:false,msg:"Fant ikke kontoene – sjekk navnene."};
+    if(from.id===to.id) return {ok:false,msg:"Velg to forskjellige kontoer."};
+    state.transactions.push({id:uid(),type:"transfer",amount:amt,date:todayISO(),note:"",fromId:from.id,toId:to.id});
+    save(); render(); return {ok:true,msg:`Overførte ${fmt(amt)} fra ${from.name} til ${to.name}`};
+  }
+  // Lag konto
+  let m=t.match(/(?:lag|opprett|ny) konto (.+)/);
+  if(m){
+    const credit=/kreditt|kredittkort|visa|mastercard/.test(t);
+    let name=text.slice(text.toLowerCase().indexOf(m[1])).trim().replace(/\s*(som )?(kreditt(kort)?|debet)\s*$/i,"").trim();
+    if(!name) return {ok:false,msg:"Gi kontoen et navn."};
+    state.accounts.push({id:uid(),name:cap(name),type:credit?"credit":"debit"});
+    save(); render(); return {ok:true,msg:`Opprettet «${cap(name)}»`+(credit?" (kredittkort)":"")};
+  }
+  // Budsjett
+  m=t.match(/budsjett (?:for )?([a-zæøå]+)\s+(\d[\d  .]*)/);
+  if(m){ const cat=matchCategory(m[1]); if(!cat) return {ok:false,msg:"Ukjent kategori: "+m[1]};
+    const amt=parseNum(m[2]); if(!amt) return {ok:false,msg:"Angi et beløp."};
+    if(!state.categories.expense.includes(cat)) state.categories.expense.push(cat);
+    state.budgets[cat]=amt; save(); render(); return {ok:true,msg:`Budsjett for ${cat} satt til ${fmt(amt)}`};
+  }
+  // Sparemål
+  m=t.match(/(?:spar til|sparemål|mål)\s+(.+?)\s+(\d[\d  .]*)\s*$/);
+  if(m){ const name=cap(m[1].trim()); const target=parseNum(m[2]); if(!target) return {ok:false,msg:"Angi et målbeløp."};
+    state.goals.push({id:uid(),name,target,saved:0}); save(); render(); return {ok:true,msg:`Sparemål «${name}» på ${fmt(target)} opprettet`};
+  }
+  // Transaksjon (utgift/inntekt)
+  const amt=cmdNum(t);
+  if(amt){
+    const income=/(lønn|inntekt|fikk|tjente|mottok|innbetal|solgte)/.test(t);
+    const type=income?"income":"expense";
+    const acc=findAccount(t) || state.accounts.find(a=>a.type==="debit") || state.accounts[0];
+    if(!acc) return {ok:false,msg:"Opprett en konto først."};
+    const cat=findCategoryInText(t,type);
+    let date=todayISO();
+    if(/i går/.test(t)){ const d=new Date(); d.setDate(d.getDate()-1); date=d.toISOString().slice(0,10); }
+    state.transactions.push({id:uid(),type,amount:amt,category:cat,date,note:"",accountId:acc.id});
+    save(); render();
+    return {ok:true,msg:`La til ${type==="income"?"inntekt":"utgift"} ${fmt(amt)} · ${cat} · ${acc.name}`};
+  }
+  return {ok:false,msg:"Forsto ikke. Prøv f.eks. «brukte 200 på mat» eller «vis juni»."};
+}
+function cmdSheet(){
+  openSheet(`
+    <div class="sheethead"><h2>✨ Kommando</h2><button id="x">×</button></div>
+    <p class="small" style="margin-top:0">Skriv på vanlig norsk. Trykk et eksempel eller skriv selv:</p>
+    <div class="preset" id="cmdEx">
+      <button>brukte 200 på mat</button>
+      <button>fikk 32000 lønn</button>
+      <button>vis juni</button>
+      <button>sett budsjett mat 6000</button>
+      <button>lag konto sparekonto</button>
+      <button>spar til ferie 20000</button>
+    </div>
+    <input id="cmdIn" type="text" placeholder="Skriv kommando ..." style="margin-top:14px">
+    <div id="cmdRes" class="small" style="margin-top:10px"></div>
+    <button class="btn" id="cmdGo" style="margin-top:14px">Kjør</button>
+  `);
+  document.getElementById("x").onclick=closeSheet;
+  const inp=document.getElementById("cmdIn"); inp.focus();
+  document.querySelectorAll("#cmdEx button").forEach(b=>b.onclick=()=>{ inp.value=b.textContent; inp.focus(); });
+  const run=()=>{ const r=parseCommand(inp.value); const el=document.getElementById("cmdRes");
+    el.innerHTML=(r.ok?"✅ ":"⚠️ ")+esc(r.msg); el.style.color=r.ok?"var(--income)":"var(--expense)"; if(r.ok) inp.value=""; };
+  document.getElementById("cmdGo").onclick=run;
+  inp.onkeydown=e=>{ if(e.key==="Enter") run(); };
+}
+
+// ---------- Events ----------
+document.getElementById("fab").onclick=txSheet;
+document.getElementById("prevM").onclick=()=>{ curDate.setMonth(curDate.getMonth()-1); render(); };
+document.getElementById("nextM").onclick=()=>{ curDate.setMonth(curDate.getMonth()+1); render(); };
+document.getElementById("addCatBtn").onclick=()=>catSheet(null);
+document.getElementById("addGoalBtn").onclick=()=>goalSheet(null);
+document.getElementById("importCsvBtn").onclick=csvSheet;
+document.getElementById("importCsvBtn2").onclick=csvSheet;
+document.getElementById("addAcctBtn").onclick=()=>accountSheet(null);
+document.getElementById("cmdBtn").onclick=cmdSheet;
+document.getElementById("rerunSetup").onclick=startOnboarding;
+
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.getElementById("v-"+b.dataset.v).classList.add("active");
+  window.scrollTo(0,0);
+});
+
+document.body.addEventListener("click",e=>{
+  const del=e.target.closest("[data-del]");
+  if(del){ if(confirm("Slette denne transaksjonen?")){ state.transactions=state.transactions.filter(t=>t.id!==del.dataset.del); save(); render(); } return; }
+  const ec=e.target.closest("[data-editcat]"); if(ec){ catSheet(ec.dataset.editcat); return; }
+  const ga=e.target.closest("[data-goaladd]"); if(ga){ goalAddSheet(ga.dataset.goaladd); return; }
+  const ge=e.target.closest("[data-goaledit]"); if(ge){ goalSheet(ge.dataset.goaledit); return; }
+  const ea=e.target.closest("[data-editacct]"); if(ea){ accountSheet(ea.dataset.editacct); return; }
+  const aa=e.target.closest("[data-addacct]"); if(aa){ accountSheet(null); return; }
+  const ch=e.target.closest("[data-acct]"); if(ch){ acctFilter=ch.dataset.acct; renderTxList(txInMonth()); return; }
+});
+
+// Export / import / reset
+document.getElementById("exportBtn").onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="budsjett-backup-"+new Date().toISOString().slice(0,10)+".json"; a.click();
+};
+document.getElementById("importBtn").onclick=()=>document.getElementById("importFile").click();
+document.getElementById("importFile").onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const d=JSON.parse(r.result); if(!d.transactions) throw 0; state=Object.assign(JSON.parse(JSON.stringify(DEFAULTS)),d); save(); render(); alert("Data importert."); }catch(err){ alert("Ugyldig fil."); } };
+  r.readAsText(f);
+};
+document.getElementById("resetBtn").onclick=()=>{ if(confirm("Slette ALLE data? Dette kan ikke angres.")){ localStorage.removeItem(LS_KEY); state=JSON.parse(JSON.stringify(DEFAULTS)); render(); startOnboarding(); } };
+
+render();
+if(!state.onboarded && state.accounts.length===0) startOnboarding();
+
+// PWA: service worker + varig lagring (kun når appen kjøres fra en adresse, ikke fil://)
+if("serviceWorker" in navigator && location.protocol.indexOf("http")===0){
+  window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+}
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+</script>
+</body>
+</html>
