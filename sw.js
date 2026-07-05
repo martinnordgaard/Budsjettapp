@@ -1,5 +1,7 @@
-/* Budsjett – service worker for offline-bruk */
-const CACHE = "budsjett-v1";
+/* Budsjett – service worker
+   v2: nettverk-først for sider (så oppdateringer vises med én gang når du er online),
+   cache-først for ikoner/statiske filer, og offline-fallback. */
+const CACHE = "budsjett-v2";
 const ASSETS = [
   "./",
   "./index.html",
@@ -23,14 +25,33 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
-  if (e.request.method !== "GET") return;
-  e.respondWith(
-    caches.match(e.request).then(cached =>
-      cached || fetch(e.request).then(resp => {
+  const req = e.request;
+  if (req.method !== "GET") return;
+
+  const isHTML = req.mode === "navigate" ||
+    (req.headers.get("accept") || "").includes("text/html");
+
+  if (isHTML) {
+    // Nettverk-først: hent fersk side, fall tilbake til cache offline
+    e.respondWith(
+      fetch(req).then(resp => {
         const copy = resp.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
+        caches.open(CACHE).then(c => c.put("./index.html", copy));
         return resp;
-      }).catch(() => caches.match("./index.html"))
-    )
+      }).catch(() => caches.match(req).then(r => r || caches.match("./index.html")))
+    );
+    return;
+  }
+
+  // Andre filer: cache-først, oppdater i bakgrunnen
+  e.respondWith(
+    caches.match(req).then(cached => {
+      const network = fetch(req).then(resp => {
+        const copy = resp.clone();
+        caches.open(CACHE).then(c => c.put(req, copy));
+        return resp;
+      }).catch(() => cached);
+      return cached || network;
+    })
   );
 });
